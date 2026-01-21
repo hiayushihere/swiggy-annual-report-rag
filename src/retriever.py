@@ -1,13 +1,12 @@
-# src/retriever.py
+
 import re
 import json
 from pathlib import Path
 from sentence_transformers import CrossEncoder
 from src.embed_index import search
 
-# ----------------------------
 # Load chunks.jsonl once
-# ----------------------------
+
 CHUNKS_PATH = Path("data/processed/chunks.jsonl")
 ALL_CHUNKS = []
 
@@ -20,9 +19,9 @@ if CHUNKS_PATH.exists():
                 pass
 
 
-# ----------------------------
+
 # Cross Encoder Loading
-# ----------------------------
+
 _CROSS_ENCODER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 _cross = None
 
@@ -37,9 +36,9 @@ def get_cross_encoder():
     return _cross
 
 
-# ----------------------------
+
 # FIGURE/TABLE ID extraction
-# ----------------------------
+
 def normalize_figure_token(s):
     """Normalize variations like 'Figure III . 5' → 'figureiii.5' """
     if not s:
@@ -71,37 +70,50 @@ def extract_fig_ids_from_query(q):
     return list(found)
 
 
-# ----------------------------
 # Expand query for FAISS
-# ----------------------------
+
 def expand_query(q):
     expansions = {q}
     qlow = q.lower()
 
-    # semantic hints: improves embedding matching
-    if "inflation" in qlow:
-        expansions.update(["inflation", "CPI", "price level", "consumer price index"])
-    if "gdp" in qlow:
-        expansions.update(["GDP growth", "economic growth"])
-    if "non-hydrocarbon" in qlow:
-        expansions.update(["non-hydrocarbon GDP", "nonhydrocarbon growth"])
-    if "forecast" in qlow:
-        expansions.update(["forecast", "projection", "expected"])
+    # Swiggy business terminology expansion
+    if "revenue" in qlow or "sales" in qlow:
+        expansions.update(["net sales", "income from operations", "total income"])
 
-    # attach figure IDs
+    if "loss" in qlow or "profit" in qlow:
+        expansions.update(["net loss", "profit after tax", "PAT", "loss after tax"])
+
+    if "instamart" in qlow:
+        expansions.update(["quick commerce", "dark stores", "Instamart business"])
+
+    if "food delivery" in qlow:
+        expansions.update(["restaurant partners", "orders", "AOV"])
+
+    if "users" in qlow:
+        expansions.update(["monthly transacting users", "MTU"])
+
+    if "board" in qlow or "director" in qlow:
+        expansions.update(["board of directors", "independent directors", "nominee directors"])
+
+    if "subsidiary" in qlow:
+        expansions.update(["Scootsy", "Supr Infotech", "Lynks Logistics"])
+
+    if "financial" in qlow:
+        expansions.update(["standalone financial", "consolidated financial"])
+
+    # Attach figure/table IDs
     fig_ids = extract_fig_ids_from_query(q)
     for fid in fig_ids:
         expansions.add(fid)
-        expansions.add("figure" + fid)
-        expansions.add("fig" + fid)
-        expansions.add(fid.replace(".", ""))   # e.g. iii5
+        expansions.add("figure " + fid)
+        expansions.add("table " + fid)
 
     return list(expansions)
 
 
-# ----------------------------
-# DIRECT MATCHING BOOST
-# ----------------------------
+
+
+
 def direct_figure_table_matches(query):
     """
     Directly search metadata for matching figure_tag or table identifiers.
@@ -123,7 +135,7 @@ def direct_figure_table_matches(query):
                 if any(fid in c["id"].lower() for fid in fig_ids):
                     matches.append(c)
 
-        # figure id matching against metadata
+       
         tag = meta.get("figure_tag", "")
         if tag:
             tag_norm = normalize_figure_token(tag)
@@ -131,16 +143,16 @@ def direct_figure_table_matches(query):
                 if fid in tag_norm:
                     matches.append(c)
 
-    # dedupe
+   
     uniq = {}
     for m in matches:
         uniq[m["id"]] = m
     return list(uniq.values())
 
 
-# ----------------------------
+
 # Main Retrieval Function
-# ----------------------------
+
 def retrieve(query, topk=15, rerank_topk=5):
     # 1) Direct figure/table matching FIRST (very high priority)
     direct_hits = direct_figure_table_matches(query)
@@ -166,7 +178,7 @@ def retrieve(query, topk=15, rerank_topk=5):
 
     hits = list(merged.values())
 
-    # 3) Rerank using cross encoder if available
+    # 3) Rerank using cross encoder 
     cross = get_cross_encoder()
     if cross and len(hits) > 1:
         pairs = [(query, h["text"]) for h in hits]
@@ -179,5 +191,5 @@ def retrieve(query, topk=15, rerank_topk=5):
         except:
             pass
 
-    # 4) final top-k
+    # 4) final 
     return hits[:rerank_topk]

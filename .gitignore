@@ -1,18 +1,13 @@
-# Ignore virtual environments
 .venv/
 env/
 venv/
 
-# Ignore heavy FAISS index and processed chunks
 data/index/
 data/processed/chunks.jsonl
 
-# Ignore large OCR images rendered
 data/ingested/images/
 
-# Python cache
 __pycache__/
 *.pyc
 
-# MacOS files
 .DS_Store

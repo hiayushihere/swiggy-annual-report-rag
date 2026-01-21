@@ -6,7 +6,7 @@ from src.embed_index import build_index
 
 ROOT = Path(__file__).resolve().parents[0]
 DATA_DIR = ROOT / "data"
-PDF_PATH = DATA_DIR / "qatar_test_doc.pdf"
+PDF_PATH = DATA_DIR / "Annual-Report-FY-2023-24.pdf"
 
 OUT_PROCESSED = DATA_DIR / "processed"
 OUT_PROCESSED.mkdir(exist_ok=True, parents=True)

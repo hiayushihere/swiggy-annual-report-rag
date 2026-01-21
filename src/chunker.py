@@ -65,52 +65,107 @@ def chunk_text(text, page, chunk_size=300, overlap=50):
 
 def page_to_chunks(page_obj, chunk_size=300, overlap=50):
     """
-    Input: page_obj with keys: 'page', 'text', 'tables', 'images' (images: list of {'ocr','path'})
-    Returns: list of chunks with meta including any discovered figure_tag
+    Input:
+        page_obj with keys:
+        'page', 'text', 'tables', 'images'
+        images: list of {'ocr','path'}
+
+    Returns:
+        list of chunks with enriched metadata for Swiggy Annual Report RAG
     """
+
     chunks = []
     page = page_obj.get("page")
     page_text = page_obj.get("text", "") or ""
 
+    SOURCE_NAME = "Swiggy Annual Report FY 2023-24"
+
+   
+    # TEXT CHUNKS
+ 
     if page_text.strip():
         text_chunks = chunk_text(page_text, page, chunk_size, overlap)
+
         for c in text_chunks:
-            fig_tag = extract_figure_tag("", c["text"])  # scan chunk text
+            fig_tag = extract_figure_tag("", c["text"])
+
+            c["meta"] = {
+                "page": page,
+                "type": "text",
+                "source": SOURCE_NAME
+            }
+
             if fig_tag:
                 c["meta"]["figure_tag"] = fig_tag
+
             chunks.append(c)
+
+    # TABLE CHUNKS
 
     for t_i, table in enumerate(page_obj.get("tables", []) or []):
         try:
             tbl_text = semantic_table_text(table, page, t_i)
-            meta = {"page": page, "type": "table"}
+
             fig_tag = extract_figure_tag("", tbl_text)
+
+            meta = {
+                "page": page,
+                "type": "table",
+                "source": SOURCE_NAME
+            }
+
             if fig_tag:
                 meta["figure_tag"] = fig_tag
+
             chunks.append({
                 "id": f"{page}-tbl-{t_i}",
                 "text": tbl_text,
                 "meta": meta
             })
+
         except Exception:
             continue
 
+
+    # IMAGE OCR CHUNKS
+
     images = page_obj.get("images", []) or []
+
     for img_i, img in enumerate(images):
         ocr_text = img.get("ocr", "") or ""
         fig_tag = extract_figure_tag(ocr_text, page_text)
+
         if ocr_text.strip():
-            txt = f"{fig_tag} IMAGE_OCR (page {page}): {ocr_text}" if fig_tag else f"IMAGE_OCR (page {page}): {ocr_text}"
-            meta = {"page": page, "type": "image", "path": img.get("path")}
+            txt = (
+                f"{fig_tag} IMAGE_OCR (page {page}): {ocr_text}"
+                if fig_tag else
+                f"IMAGE_OCR (page {page}): {ocr_text}"
+            )
+
+            meta = {
+                "page": page,
+                "type": "image",
+                "path": img.get("path"),
+                "source": SOURCE_NAME
+            }
+
             if fig_tag:
                 meta["figure_tag"] = fig_tag
+
             chunks.append({
                 "id": f"{page}-imgocr-{img_i}",
                 "text": txt,
                 "meta": meta
             })
+
         else:
-            meta = {"page": page, "type": "image", "path": img.get("path")}
+            meta = {
+                "page": page,
+                "type": "image",
+                "path": img.get("path"),
+                "source": SOURCE_NAME
+            }
+
             chunks.append({
                 "id": f"{page}-img-{img_i}",
                 "text": f"IMAGE (page {page}) - no OCR text",

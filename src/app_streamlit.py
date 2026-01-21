@@ -1,7 +1,5 @@
 import streamlit as st
 from pathlib import Path
-import json
-import requests
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,7 +12,6 @@ from src.generator_ollama import generate_answer
 
 
 DATA_DIR = ROOT / "data"
-EVAL_PATH = DATA_DIR / "eval" / "questions_retrieval.json"
 
 st.set_page_config(
     page_title="Multi-Modal RAG System",
@@ -60,8 +57,8 @@ h1, h2, h3 {
 
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
-st.title("Multi-Modal RAG System")
-st.subheader("Question-Answering over PDFs with text, tables, and figures")
+st.title("Swiggy Annual Report AI Assistant")
+st.subheader("RAG-based Question Answering on Swiggy Annual Report FY 2023–24")
 
 def build_context_preview(chunks, limit=300):
     rows = []
@@ -81,14 +78,14 @@ def build_context_preview(chunks, limit=300):
 
     return rows, images
 
-tab1, tab2 = st.tabs(["Ask a Question", "Evaluation Suite"])
+tab1 = st.container()
 with tab1:
 
     st.header("Ask Questions About the Document")
 
     question = st.text_input(
         "Enter your question",
-        placeholder="Example: What does Figure III.3 illustrate?"
+        placeholder="Example: What was Swiggy's consolidated loss in FY24?"
     )
 
     run = st.button("Generate Answer")
@@ -112,38 +109,3 @@ with tab1:
             for idx, img_path in enumerate(images):
                 cols[idx % 3].image(str(img_path), caption=Path(img_path).name)
 
-with tab2:
-
-    st.header("Evaluation Suite")
-
-    if not EVAL_PATH.exists():
-        st.error("Evaluation file not found at: data/eval/questions.json")
-
-    else:
-        tests = json.load(open(EVAL_PATH))
-
-        if st.button("Run Evaluation"):
-            results = []
-            passed = 0
-
-            for t in tests:
-                q = t["question"]
-                expected_page = t.get("expected_page")
-
-                with st.spinner(f"Evaluating: {q}"):
-                    hits = retrieve(q, topk=10, rerank_topk=5)
-                    pages = {h["meta"].get("page") for h in hits}
-
-                    ok = expected_page in pages if expected_page else True
-                    passed += ok
-
-                    results.append((q, expected_page, pages, ok))
-
-            st.success(f"Evaluation complete — Score: {passed} / {len(tests)}")
-
-            for q, exp, got, ok in results:
-                st.write("---")
-                st.write(f"**Question:** {q}")
-                st.write(f"Expected page: {exp}")
-                st.write(f"Retrieved pages: {sorted(got)}")
-                st.write(f"Result: {'PASS' if ok else 'FAIL'}")

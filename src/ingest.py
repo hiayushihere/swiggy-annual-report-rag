@@ -77,7 +77,7 @@ def extract_pdf(pdf_path):
 
 
 if __name__ == "__main__":
-    pdf_path = DATA_DIR / "qatar_test_doc.pdf"
+    pdf_path = DATA_DIR / "Annual-Report-FY-2023-24.pdf"
     pages_output = extract_pdf(pdf_path)
 
     out_file = OUT_DIR / "pages.json"
