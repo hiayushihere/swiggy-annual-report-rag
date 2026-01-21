@@ -37,6 +37,7 @@ Hybrid retrieval (semantic + figure/table-aware)
 Local LLM answering (Ollama – Llama 3.1)
 
 Streamlit user interface
+___
 
 ### Features
 
@@ -83,6 +84,8 @@ Ask questions
 Preview retrieved chunks
 
 See extracted images/tables
+
+___
 
 ### Installation & Setup
 
@@ -131,7 +134,9 @@ data/processed/chunks.jsonl
 
 data/index/faiss.index
 
-#### Run the Streamlit Application
+___
+
+### Run the Streamlit Application
 `streamlit run src/app_streamlit.py`
 
 A browser window will open with:
@@ -143,8 +148,10 @@ Retrieved context table
 Image previews
 
 LLM answers with page citations
+___
 <img width="1453" height="818" alt="Screenshot 2026-01-21 at 11 08 48 AM" src="https://github.com/user-attachments/assets/157657e9-882c-4647-ae1d-654d88c976e5" />
 <img width="1428" height="779" alt="Screenshot 2026-01-21 at 11 09 22 AM" src="https://github.com/user-attachments/assets/e8647f4b-baeb-403e-b9ba-0765b3a76324" />
+
 
 
 
